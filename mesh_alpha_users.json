@@ -31,9 +31,8 @@
     {"user": "Airtel Center Ext-1", "serial": "AZYAPBB000086350", "mac": "C4-9A-31-8F-E2-70"},
     {"user": "Airtel Center Ext-2", "serial": "AZYAPBB000086351", "mac": "C4-9A-31-8F-E2-78"},
     {"user": "Ramesh Root", "serial": "ZYOTAF220521", "mac": ""},
-    {"user": "Amitabh Root", "serial": "ZYOTB0900058", "mac": "C0-2E-5F-AD-77-99"},
-    {"user": "Amitabh Ext-1", "serial": "AZYAPB1F00061776", "mac": "30-BD-13-CF-05-D0"},
-    {"user": "Amitabh Ext-2", "serial": "AZYAPB0F00081172", "mac": "30-BD-13-C5-EC-A8"},
+    {"user": "Amitabh (Bangalore) Root", "serial": "ZYOTEF108503", "mac": "C0-2E-5F-AD-77-99"},
+    {"user": "Amitabh Ext-1", "serial": "", "mac": "30-BD-13-30-F2-A8"},
     {"user": "Praveen Root", "serial": "ZYOT5E069474", "mac": "6C-4F-89-05-E1-1B"},
     {"user": "Praveen Ext-1", "serial": "223333-768367373646", "mac": "30-BD-13-CF-4F-18"},
     {"user": "Hari Root", "serial": "ZYOTFF046132", "mac": ""},
@@ -46,7 +45,4 @@
     {"user": "Praveen(Amitabh) Root", "serial": "ZYOTB0900058", "mac": "C0-2E-5F-AD-77-99"},
     {"user": "Praveen(Amitabh) Ext-1", "serial": "AZYAPB0F00081172", "mac": "30-BD-13-C5-EC-A8"},
     {"user": "Praveen(Amitabh) Ext-2", "serial": "AZYAPB1F00061776", "mac": "30-BD-13-CF-05-D0"}
-
-
-
 ]
