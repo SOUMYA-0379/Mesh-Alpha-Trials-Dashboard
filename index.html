@@ -2937,15 +2937,15 @@ async function exportRangeReportPNG() {
 
 // ============================================================
 // CHART FIXES PATCH v2 — Band TOT + Pod Health + Pod Uptime
-// Parses EXTENDER count (excludes Root) from mesh_alpha_users.json
-// Shows "Total Extenders" for users active in that day's data
+//                       + Vendor Detection from user.json
 // Paste BEFORE initTheme()/boot()
 // ============================================================
 
 // ---- GLOBALS ----
 let serialToBase = {};       // "NKOT0F01CE7E" → "Shashwat Sharma"
-let baseExtCount = {};       // "Shashwat Sharma" → 2 (ONLY extenders, not Root)
+let baseExtCount = {};       // "Shashwat Sharma" → 2 (extenders only, Root excluded)
 let fullNameToBase = {};     // "Shashwat Sharma Root" → "Shashwat Sharma"
+let baseVendor = {};         // "Shashwat Sharma" → "Nokia"
 
 // ---- Extract base household name ----
 function extractBaseName(fullName) {
@@ -2958,25 +2958,45 @@ function isExtenderEntry(fullName) {
     return /(?:Ext[-\s]?\d+|Extender[-\s]?\d+)\s*$/i.test(fullName);
 }
 
-// ---- Get expected extender count for a single user ----
+// ---- Check if entry is Root ----
+function isRootEntry(fullName) {
+    return /\bRoot\s*$/i.test(fullName);
+}
+
+// ---- Detect vendor from serial prefix ----
+function getVendorFromSerial(serial) {
+    if (!serial) return 'Unknown';
+    var s = serial.toUpperCase();
+    if (s.startsWith('NKOT') || s.startsWith('ANKAP')) return 'Nokia';
+    if (s.startsWith('ZYOT') || s.startsWith('ATAA') || s.startsWith('AZYAP')) return 'Zyxel';
+    return 'Unknown';
+}
+
+// ---- Get extender count for a user ----
 function getExtCountForUser(userName) {
-    const base = fullNameToBase[userName] || extractBaseName(userName);
+    var base = fullNameToBase[userName] || extractBaseName(userName);
     return baseExtCount[base] || 0;
 }
 
-// ---- HOOK boot(): Parse user.json for extender counts ----
-const _origBootCF2 = boot;
+// ---- Get vendor for a user ----
+function getVendorForUser(userName) {
+    var base = fullNameToBase[userName] || extractBaseName(userName);
+    return baseVendor[base] || 'Unknown';
+}
+
+// ---- HOOK boot(): Parse user.json ----
+var _origBootCF2 = boot;
 boot = async function() {
     try {
-        const res = await fetch(USER_METADATA_FILE);
-        const userJson = await res.json();
+        var res = await fetch(USER_METADATA_FILE);
+        var userJson = await res.json();
 
-        userJson.forEach(u => {
-            const fullName = (u.user || '').trim();
+        userJson.forEach(function(u) {
+            var fullName = (u.user || '').trim();
             if (!fullName) return;
 
-            const serial = (u.serial || '').toString().trim().toUpperCase();
-            const base = extractBaseName(fullName);
+            var serial = (u.serial || '').toString().trim().toUpperCase();
+            var base = extractBaseName(fullName);
 
             fullNameToBase[fullName] = base;
 
@@ -2984,19 +3004,24 @@ boot = async function() {
                 serialToBase[serial] = base;
             }
 
-            // Initialize household if not seen
+            // Initialize
             if (!baseExtCount[base]) baseExtCount[base] = 0;
 
-            // ONLY count extenders — skip Root entries
+            // Count ONLY extenders (skip Root)
             if (isExtenderEntry(fullName)) {
                 baseExtCount[base]++;
             }
+
+            // Vendor detection from ROOT serial prefix ONLY
+            if (isRootEntry(fullName) && serial) {
+                baseVendor[base] = getVendorFromSerial(serial);
+            }
         });
 
-        console.log('[CHART FIX v2] Extender counts parsed (Root excluded):');
-        console.log('  serialToBase entries:', Object.keys(serialToBase).length);
+        console.log('[CHART FIX v2] Parsed user.json:');
         console.log('  Households:', Object.keys(baseExtCount).length);
-        console.table(baseExtCount);
+        console.log('  Extender counts:', baseExtCount);
+        console.log('  Vendor map:', baseVendor);
     } catch (e) {
         console.warn('[CHART FIX v2] Could not parse user.json:', e);
     }
@@ -3004,27 +3029,27 @@ boot = async function() {
     await _origBootCF2();
 };
 
-// ---- HOOK computeDayMetrics(): Add expectedExtenders to each day ----
-const _origComputeDay = computeDayMetrics;
+// ---- HOOK computeDayMetrics(): Add expectedExtenders ----
+var _origComputeDay = computeDayMetrics;
 computeDayMetrics = function(rows) {
-    const result = _origComputeDay(rows);
+    var result = _origComputeDay(rows);
 
     // Scan rows for unique serials → active households
-    const activeSerials = new Set();
-    rows.forEach(row => {
-        const sn = (row.ont_serial_no || '').toString().trim().toUpperCase();
+    var activeSerials = new Set();
+    rows.forEach(function(row) {
+        var sn = (row.ont_serial_no || '').toString().trim().toUpperCase();
         if (sn) activeSerials.add(sn);
     });
 
-    const activeHouseholds = new Set();
-    activeSerials.forEach(sn => {
-        const base = serialToBase[sn];
+    var activeHouseholds = new Set();
+    activeSerials.forEach(function(sn) {
+        var base = serialToBase[sn];
         if (base) activeHouseholds.add(base);
     });
 
     // Sum extender counts ONLY for active households
-    let expectedExtenders = 0;
-    activeHouseholds.forEach(base => {
+    var expectedExtenders = 0;
+    activeHouseholds.forEach(function(base) {
         expectedExtenders += (baseExtCount[base] || 0);
     });
 
@@ -3032,30 +3057,42 @@ computeDayMetrics = function(rows) {
     result.activeHouseholds = activeHouseholds.size;
 
     // Per-user expected extenders
-    Object.keys(result.perUser).forEach(userName => {
+    Object.keys(result.perUser).forEach(function(userName) {
         result.perUser[userName].expectedExtenders = getExtCountForUser(userName);
     });
 
     return result;
 };
 
+// ---- OVERRIDE detectUserIssues(): Fix vendor from baseVendor ----
+var _origDetectUserIssues = typeof detectUserIssues === 'function' ? detectUserIssues : null;
+if (_origDetectUserIssues) {
+    var _origDetect = detectUserIssues;
+    detectUserIssues = function(userName) {
+        var result = _origDetect(userName);
+        // Override vendor with correct value from user.json ROOT serial
+        result.vendor = getVendorForUser(userName);
+        return result;
+    };
+}
+
 // ---- POST-HOOK: Fix 3 charts after renderWeeklyInsightsV2 ----
-const _origRenderWkCF2 = renderWeeklyInsightsV2;
+var _origRenderWkCF2 = renderWeeklyInsightsV2;
 renderWeeklyInsightsV2 = function() {
     _origRenderWkCF2();
 
-    const labels = Object.keys(perDayMetrics);
-    const M = Object.values(perDayMetrics);
+    var labels = Object.keys(perDayMetrics);
+    var M = Object.values(perDayMetrics);
     if (!labels.length) return;
 
-    const selectedUser = document.getElementById('headerUserFilter')?.value ||
-                         document.getElementById('userFilter')?.value || 'ALL';
+    var selectedUser = (document.getElementById('headerUserFilter') || {}).value ||
+                       (document.getElementById('userFilter') || {}).value || 'ALL';
 
-    let metrics;
+    var metrics;
     if (selectedUser !== 'ALL') {
-        metrics = labels.map(label => {
-            const pu = perDayPerUserMetrics[selectedUser] &&
-                       perDayPerUserMetrics[selectedUser][label];
+        metrics = labels.map(function(label) {
+            var pu = perDayPerUserMetrics[selectedUser] &&
+                     perDayPerUserMetrics[selectedUser][label];
             if (!pu) return {
                 tot2g:0, tot5g:0, podsOnline:0, podsOffline:0,
                 podsExcellent:0, podsDegraded:0, podsCritical:0, expectedExtenders:0
@@ -3076,24 +3113,23 @@ renderWeeklyInsightsV2 = function() {
     }
 
     // Chart styling
-    const gc = 'rgba(42,50,65,0.4)', tc2 = '#6B7280';
-    const sx = {
+    var gc = 'rgba(42,50,65,0.4)', tc2 = '#6B7280';
+    var sx = {
         grid: { color: gc },
         ticks: { color: '#9CA3AF', font: { size: 10, family: "'Plus Jakarta Sans'" }, maxRotation: 45 }
     };
-    const sy = {
+    var sy = {
         grid: { color: gc },
         ticks: { color: tc2, font: { size: 10 } },
         beginAtZero: true
     };
-    const lg = {
+    var lg = {
         position: 'bottom',
         labels: { color: '#9CA3AF', font: { size: 10, family: "'Plus Jakarta Sans'" }, padding: 10, usePointStyle: true }
     };
 
-    // Expected extenders per day (dynamic)
-    const expectedLine = metrics.map(m => m.expectedExtenders || 0);
-    const maxExpected = Math.max(...expectedLine, 0);
+    var expectedLine = metrics.map(function(m) { return m.expectedExtenders || 0; });
+    var maxExpected = Math.max.apply(null, expectedLine.concat([0]));
 
     // ==========================================================
     // FIX 1: BAND TOT — TWO INDEPENDENT LINES (NOT STACKED)
@@ -3103,11 +3139,11 @@ renderWeeklyInsightsV2 = function() {
     weeklyChartInstances.bandTOT = new Chart(document.getElementById('wkChartBandTOT'), {
         type: 'line',
         data: {
-            labels,
+            labels: labels,
             datasets: [
                 {
                     label: '5 GHz TOT %',
-                    data: metrics.map(m => m.tot5g),
+                    data: metrics.map(function(m) { return m.tot5g; }),
                     backgroundColor: 'rgba(6,182,212,0.12)',
                     borderColor: '#06b6d4',
                     borderWidth: 2.5,
@@ -3119,7 +3155,7 @@ renderWeeklyInsightsV2 = function() {
                 },
                 {
                     label: '2.4 GHz TOT %',
-                    data: metrics.map(m => m.tot2g),
+                    data: metrics.map(function(m) { return m.tot2g; }),
                     backgroundColor: 'rgba(249,115,22,0.12)',
                     borderColor: '#f97316',
                     borderWidth: 2.5,
@@ -3136,12 +3172,11 @@ renderWeeklyInsightsV2 = function() {
             maintainAspectRatio: false,
             scales: {
                 x: sx,
-                y: {
-                    ...sy,
+                y: Object.assign({}, sy, {
                     stacked: false,
                     max: 100,
                     title: { display: true, text: 'Avg TOT %', color: tc2, font: { size: 10 } }
-                }
+                })
             },
             plugins: { legend: lg }
         }
@@ -3152,16 +3187,16 @@ renderWeeklyInsightsV2 = function() {
     // ==========================================================
     if (weeklyChartInstances.podHealth) weeklyChartInstances.podHealth.destroy();
 
-    const phDatasets = [
+    var phDatasets = [
         {
             label: 'Online',
-            data: metrics.map(m => m.podsOnline),
+            data: metrics.map(function(m) { return m.podsOnline; }),
             backgroundColor: 'rgba(16,185,129,0.7)',
             borderColor: '#10b981', borderWidth: 1, borderRadius: 4, order: 2
         },
         {
             label: 'Offline',
-            data: metrics.map(m => m.podsOffline),
+            data: metrics.map(function(m) { return m.podsOffline; }),
             backgroundColor: 'rgba(239,68,68,0.7)',
             borderColor: '#ef4444', borderWidth: 1, borderRadius: 4, order: 2
         }
@@ -3186,15 +3221,15 @@ renderWeeklyInsightsV2 = function() {
 
     weeklyChartInstances.podHealth = new Chart(document.getElementById('wkChartPodHealth'), {
         type: 'bar',
-        data: { labels, datasets: phDatasets },
+        data: { labels: labels, datasets: phDatasets },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { ...sx, stacked: true },
-                y: {
-                    ...sy, stacked: true,
+                x: Object.assign({}, sx, { stacked: true }),
+                y: Object.assign({}, sy, {
+                    stacked: true,
                     title: { display: true, text: 'Pods', color: tc2, font: { size: 10 } }
-                }
+                })
             },
             plugins: { legend: lg }
         }
@@ -3205,22 +3240,22 @@ renderWeeklyInsightsV2 = function() {
     // ==========================================================
     if (weeklyChartInstances.uptime) weeklyChartInstances.uptime.destroy();
 
-    const utDatasets = [
+    var utDatasets = [
         {
             label: 'Excellent \u226595%',
-            data: metrics.map(m => m.podsExcellent),
+            data: metrics.map(function(m) { return m.podsExcellent; }),
             backgroundColor: 'rgba(16,185,129,0.7)',
             borderColor: '#10b981', borderWidth: 1, borderRadius: 4, order: 2
         },
         {
             label: 'Degraded 50-95%',
-            data: metrics.map(m => m.podsDegraded),
+            data: metrics.map(function(m) { return m.podsDegraded; }),
             backgroundColor: 'rgba(245,158,11,0.7)',
             borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4, order: 2
         },
         {
             label: 'Critical <50%',
-            data: metrics.map(m => m.podsCritical),
+            data: metrics.map(function(m) { return m.podsCritical; }),
             backgroundColor: 'rgba(239,68,68,0.7)',
             borderColor: '#ef4444', borderWidth: 1, borderRadius: 4, order: 2
         }
@@ -3245,27 +3280,26 @@ renderWeeklyInsightsV2 = function() {
 
     weeklyChartInstances.uptime = new Chart(document.getElementById('wkChartUptime'), {
         type: 'bar',
-        data: { labels, datasets: utDatasets },
+        data: { labels: labels, datasets: utDatasets },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { ...sx, stacked: true },
-                y: {
-                    ...sy, stacked: true,
+                x: Object.assign({}, sx, { stacked: true }),
+                y: Object.assign({}, sy, {
+                    stacked: true,
                     title: { display: true, text: 'Pods', color: tc2, font: { size: 10 } }
-                }
+                })
             },
             plugins: { legend: lg }
         }
     });
 
-    console.log('[CHART FIX v2] Rebuilt: Band TOT (unstacked), Pod Health & Uptime (extender count, Root excluded)');
+    console.log('[CHART FIX v2] Rebuilt charts. Vendor map:', baseVendor);
 };
 
 // ============================================================
 // END — CHART FIXES PATCH v2
 // ============================================================
-
 
 initTheme();
 boot();
