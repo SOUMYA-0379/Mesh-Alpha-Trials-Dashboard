@@ -2938,14 +2938,15 @@ async function exportRangeReportPNG() {
 // ============================================================
 // CHART FIXES PATCH v2 — Band TOT + Pod Health + Pod Uptime
 //                       + Vendor Detection from user.json
+//                       + Offline = Expected - Online
 // Paste BEFORE initTheme()/boot()
 // ============================================================
 
 // ---- GLOBALS ----
-let serialToBase = {};       // "NKOT0F01CE7E" → "Shashwat Sharma"
-let baseExtCount = {};       // "Shashwat Sharma" → 2 (extenders only, Root excluded)
-let fullNameToBase = {};     // "Shashwat Sharma Root" → "Shashwat Sharma"
-let baseVendor = {};         // "Shashwat Sharma" → "Nokia"
+var serialToBase = {};       // "NKOT0F01CE7E" → "Shashwat Sharma"
+var baseExtCount = {};       // "Shashwat Sharma" → 2 (extenders only, Root excluded)
+var fullNameToBase = {};     // "Shashwat Sharma Root" → "Shashwat Sharma"
+var baseVendor = {};         // "Shashwat Sharma" → "Nokia"
 
 // ---- Extract base household name ----
 function extractBaseName(fullName) {
@@ -3004,7 +3005,6 @@ boot = async function() {
                 serialToBase[serial] = base;
             }
 
-            // Initialize
             if (!baseExtCount[base]) baseExtCount[base] = 0;
 
             // Count ONLY extenders (skip Root)
@@ -3012,7 +3012,7 @@ boot = async function() {
                 baseExtCount[base]++;
             }
 
-            // Vendor detection from ROOT serial prefix ONLY
+            // Vendor from ROOT serial prefix ONLY
             if (isRootEntry(fullName) && serial) {
                 baseVendor[base] = getVendorFromSerial(serial);
             }
@@ -3065,8 +3065,7 @@ computeDayMetrics = function(rows) {
 };
 
 // ---- OVERRIDE detectUserIssues(): Fix vendor from baseVendor ----
-var _origDetectUserIssues = typeof detectUserIssues === 'function' ? detectUserIssues : null;
-if (_origDetectUserIssues) {
+if (typeof detectUserIssues === 'function') {
     var _origDetect = detectUserIssues;
     detectUserIssues = function(userName) {
         var result = _origDetect(userName);
@@ -3128,9 +3127,6 @@ renderWeeklyInsightsV2 = function() {
         labels: { color: '#9CA3AF', font: { size: 10, family: "'Plus Jakarta Sans'" }, padding: 10, usePointStyle: true }
     };
 
-    var expectedLine = metrics.map(function(m) { return m.expectedExtenders || 0; });
-    var maxExpected = Math.max.apply(null, expectedLine.concat([0]));
-
     // ==========================================================
     // FIX 1: BAND TOT — TWO INDEPENDENT LINES (NOT STACKED)
     // ==========================================================
@@ -3183,52 +3179,42 @@ renderWeeklyInsightsV2 = function() {
     });
 
     // ==========================================================
-    // FIX 2: POD HEALTH — Online/Offline + "Total Extenders"
+    // FIX 2: POD HEALTH — Online + Offline (remaining = expected - online)
     // ==========================================================
     if (weeklyChartInstances.podHealth) weeklyChartInstances.podHealth.destroy();
 
-    var phDatasets = [
-        {
-            label: 'Online',
-            data: metrics.map(function(m) { return m.podsOnline; }),
-            backgroundColor: 'rgba(16,185,129,0.7)',
-            borderColor: '#10b981', borderWidth: 1, borderRadius: 4, order: 2
-        },
-        {
-            label: 'Offline',
-            data: metrics.map(function(m) { return m.podsOffline; }),
-            backgroundColor: 'rgba(239,68,68,0.7)',
-            borderColor: '#ef4444', borderWidth: 1, borderRadius: 4, order: 2
-        }
-    ];
-    if (maxExpected > 0) {
-        phDatasets.push({
-            label: 'Total Extenders (' + (selectedUser === 'ALL' ? 'Active Users' : maxExpected) + ')',
-            data: expectedLine,
-            type: 'line',
-            borderColor: '#f59e0b',
-            backgroundColor: 'transparent',
-            borderWidth: 2.5,
-            borderDash: [8, 4],
-            pointRadius: 4,
-            pointBackgroundColor: '#f59e0b',
-            pointBorderColor: '#f59e0b',
-            tension: 0,
-            order: 1,
-            fill: false
-        });
-    }
+    // Calculate: Offline = expectedExtenders - podsOnline (clamped to 0)
+    var offlinePods = metrics.map(function(m) {
+        var offline = (m.expectedExtenders || 0) - (m.podsOnline || 0);
+        return Math.max(0, offline);
+    });
 
     weeklyChartInstances.podHealth = new Chart(document.getElementById('wkChartPodHealth'), {
         type: 'bar',
-        data: { labels: labels, datasets: phDatasets },
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Online',
+                    data: metrics.map(function(m) { return m.podsOnline; }),
+                    backgroundColor: 'rgba(16,185,129,0.7)',
+                    borderColor: '#10b981', borderWidth: 1, borderRadius: 4
+                },
+                {
+                    label: 'Offline',
+                    data: offlinePods,
+                    backgroundColor: 'rgba(239,68,68,0.7)',
+                    borderColor: '#ef4444', borderWidth: 1, borderRadius: 4
+                }
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
                 x: Object.assign({}, sx, { stacked: true }),
                 y: Object.assign({}, sy, {
                     stacked: true,
-                    title: { display: true, text: 'Pods', color: tc2, font: { size: 10 } }
+                    title: { display: true, text: 'Extenders', color: tc2, font: { size: 10 } }
                 })
             },
             plugins: { legend: lg }
@@ -3236,70 +3222,62 @@ renderWeeklyInsightsV2 = function() {
     });
 
     // ==========================================================
-    // FIX 3: POD UPTIME — Excellent/Degraded/Critical + Extenders
+    // FIX 3: POD UPTIME — Excellent + Degraded + Critical/Offline
     // ==========================================================
     if (weeklyChartInstances.uptime) weeklyChartInstances.uptime.destroy();
 
-    var utDatasets = [
-        {
-            label: 'Excellent \u226595%',
-            data: metrics.map(function(m) { return m.podsExcellent; }),
-            backgroundColor: 'rgba(16,185,129,0.7)',
-            borderColor: '#10b981', borderWidth: 1, borderRadius: 4, order: 2
-        },
-        {
-            label: 'Degraded 50-95%',
-            data: metrics.map(function(m) { return m.podsDegraded; }),
-            backgroundColor: 'rgba(245,158,11,0.7)',
-            borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4, order: 2
-        },
-        {
-            label: 'Critical <50%',
-            data: metrics.map(function(m) { return m.podsCritical; }),
-            backgroundColor: 'rgba(239,68,68,0.7)',
-            borderColor: '#ef4444', borderWidth: 1, borderRadius: 4, order: 2
-        }
-    ];
-    if (maxExpected > 0) {
-        utDatasets.push({
-            label: 'Total Extenders (' + (selectedUser === 'ALL' ? 'Active Users' : maxExpected) + ')',
-            data: expectedLine,
-            type: 'line',
-            borderColor: '#8b5cf6',
-            backgroundColor: 'transparent',
-            borderWidth: 2.5,
-            borderDash: [8, 4],
-            pointRadius: 4,
-            pointBackgroundColor: '#8b5cf6',
-            pointBorderColor: '#8b5cf6',
-            tension: 0,
-            order: 1,
-            fill: false
-        });
-    }
+    // Calculate: Offline = expectedExtenders - (excellent + degraded)
+    var uptimeOffline = metrics.map(function(m) {
+        var accounted = (m.podsExcellent || 0) + (m.podsDegraded || 0);
+        var offline = (m.expectedExtenders || 0) - accounted;
+        return Math.max(0, offline);
+    });
 
     weeklyChartInstances.uptime = new Chart(document.getElementById('wkChartUptime'), {
         type: 'bar',
-        data: { labels: labels, datasets: utDatasets },
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Excellent \u226595%',
+                    data: metrics.map(function(m) { return m.podsExcellent; }),
+                    backgroundColor: 'rgba(16,185,129,0.7)',
+                    borderColor: '#10b981', borderWidth: 1, borderRadius: 4
+                },
+                {
+                    label: 'Degraded 50-95%',
+                    data: metrics.map(function(m) { return m.podsDegraded; }),
+                    backgroundColor: 'rgba(245,158,11,0.7)',
+                    borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4
+                },
+                {
+                    label: 'Offline / Missing',
+                    data: uptimeOffline,
+                    backgroundColor: 'rgba(239,68,68,0.7)',
+                    borderColor: '#ef4444', borderWidth: 1, borderRadius: 4
+                }
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
                 x: Object.assign({}, sx, { stacked: true }),
                 y: Object.assign({}, sy, {
                     stacked: true,
-                    title: { display: true, text: 'Pods', color: tc2, font: { size: 10 } }
+                    title: { display: true, text: 'Extenders', color: tc2, font: { size: 10 } }
                 })
             },
             plugins: { legend: lg }
         }
     });
 
-    console.log('[CHART FIX v2] Rebuilt charts. Vendor map:', baseVendor);
+    console.log('[CHART FIX v2] Rebuilt charts. Offline = Expected - Online. Vendor:', baseVendor);
 };
 
 // ============================================================
 // END — CHART FIXES PATCH v2
 // ============================================================
+
 
 initTheme();
 boot();
