@@ -2936,346 +2936,323 @@ async function exportRangeReportPNG() {
 
 
 // ============================================================
-// CHART FIXES PATCH v2 — Band TOT + Pod Health + Pod Uptime
-//                       + Vendor Detection from user.json
-//                       + Offline = Expected - Online
-// Paste BEFORE initTheme()/boot()
+// AIRTEL MESHALPHA v2 — MASTER PATCH (ALL FIXES COMBINED)
+// Paste this ENTIRE block BEFORE initTheme()/boot()
 // ============================================================
 
-// ---- GLOBALS ----
-var serialToBase = {};       // "NKOT0F01CE7E" → "Shashwat Sharma"
-var baseExtCount = {};       // "Shashwat Sharma" → 2 (extenders only, Root excluded)
-var fullNameToBase = {};     // "Shashwat Sharma Root" → "Shashwat Sharma"
-var baseVendor = {};         // "Shashwat Sharma" → "Nokia"
+// ===================== SECTION 1: GLOBALS =====================
+var serialToBase = {};
+var baseExtCount = {};
+var fullNameToBase = {};
+var baseVendor = {};
 
-// ---- Extract base household name ----
-function extractBaseName(fullName) {
-    if (!fullName) return fullName;
-    return fullName.replace(/\s+(Root|Ext[-\s]?\d+|Extender[-\s]?\d+)\s*$/i, '').trim();
+function extractBaseName(fn) {
+    if (!fn) return fn;
+    return fn.replace(/\s+(Root|Ext[-\s]?\d+|Extender[-\s]?\d+)\s*$/i, '').trim();
 }
-
-// ---- Check if entry is an extender (not Root) ----
-function isExtenderEntry(fullName) {
-    return /(?:Ext[-\s]?\d+|Extender[-\s]?\d+)\s*$/i.test(fullName);
-}
-
-// ---- Check if entry is Root ----
-function isRootEntry(fullName) {
-    return /\bRoot\s*$/i.test(fullName);
-}
-
-// ---- Detect vendor from serial prefix ----
-function getVendorFromSerial(serial) {
-    if (!serial) return 'Unknown';
-    var s = serial.toUpperCase();
+function isExtenderEntry(fn) { return /(?:Ext[-\s]?\d+|Extender[-\s]?\d+)\s*$/i.test(fn); }
+function isRootEntry(fn) { return /\bRoot\s*$/i.test(fn); }
+function getVendorFromSerial(s) {
+    if (!s) return 'Unknown';
+    s = s.toUpperCase();
     if (s.startsWith('NKOT') || s.startsWith('ANKAP')) return 'Nokia';
     if (s.startsWith('ZYOT') || s.startsWith('ATAA') || s.startsWith('AZYAP')) return 'Zyxel';
     return 'Unknown';
 }
+function getExtCountForUser(u) { var b = fullNameToBase[u] || extractBaseName(u); return baseExtCount[b] || 0; }
+function getVendorForUser(u) { var b = fullNameToBase[u] || extractBaseName(u); return baseVendor[b] || 'Unknown'; }
 
-// ---- Get extender count for a user ----
-function getExtCountForUser(userName) {
-    var base = fullNameToBase[userName] || extractBaseName(userName);
-    return baseExtCount[base] || 0;
-}
+// ===================== SECTION 2: AIRTEL BRAND CSS =====================
+(function(){
+var s=document.createElement('style');s.id='airtelMasterCSS';
+s.textContent=`
+:root{--at-red:#ED1C24;--at-red-dark:#C41920;--at-red-light:#FF4D54;--at-coral:#FF6B6B;--at-glow:rgba(237,28,36,0.12);--at-glow-lg:rgba(237,28,36,0.06)}
+@keyframes airtelStripe{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:3px;z-index:10001;background:linear-gradient(90deg,#ED1C24,#FF4D54,#ED1C24,#FF6B6B,#ED1C24);background-size:300% 100%;animation:airtelStripe 6s ease infinite}
+.header{padding-top:calc(1rem + 3px)!important;background:linear-gradient(180deg,rgba(237,28,36,0.05) 0%,rgba(21,26,35,0.97) 50%)!important;border-bottom:1px solid rgba(237,28,36,0.08)!important;box-shadow:0 1px 30px rgba(0,0,0,0.15),0 1px 0 rgba(237,28,36,0.05)!important}
+body.light-theme .header{background:linear-gradient(180deg,rgba(237,28,36,0.03) 0%,rgba(255,255,255,0.97) 50%)!important;border-bottom:1px solid rgba(237,28,36,0.06)!important}
+.at-brand{display:flex;align-items:center;gap:16px}
+.at-logo-wrap{position:relative;width:44px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.4s}
+.at-logo-wrap::after{content:'';position:absolute;inset:-5px;border-radius:16px;background:radial-gradient(circle,rgba(237,28,36,0.12) 0%,transparent 70%);opacity:0;transition:opacity 0.4s}
+.at-logo-wrap:hover::after{opacity:1}.at-logo-wrap:hover{transform:scale(1.05)}.at-logo-wrap svg{width:44px;height:44px}
+.at-divider{width:1px;height:38px;background:linear-gradient(180deg,transparent,var(--border),transparent);margin:0 2px}
+.at-text{display:flex;flex-direction:column;gap:3px}
+.at-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;line-height:1;letter-spacing:-0.3px}
+.at-title .t-airtel{color:var(--at-red);font-weight:900}.at-title .t-mesh{color:var(--text-main);font-weight:700}.at-title .t-alpha{color:var(--accent);font-weight:800}.at-title .t-dot{color:var(--at-red);font-size:22px}
+.at-subtitle{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.at-tag-version{font-size:8.5px;font-weight:800;padding:3px 9px;border-radius:50px;background:linear-gradient(135deg,rgba(237,28,36,0.12),rgba(237,28,36,0.06));color:var(--at-red);letter-spacing:1px;text-transform:uppercase;border:1px solid rgba(237,28,36,0.18);font-family:'Plus Jakarta Sans',sans-serif}
+.at-tag-dept{font-size:8.5px;font-weight:700;padding:3px 9px;border-radius:50px;background:rgba(59,130,246,0.06);color:var(--accent);letter-spacing:0.6px;text-transform:uppercase;border:1px solid rgba(59,130,246,0.12);font-family:'Plus Jakarta Sans',sans-serif}
+.at-tag-env{font-size:7.5px;font-weight:700;padding:2px 7px;border-radius:50px;background:rgba(16,185,129,0.08);color:var(--success);letter-spacing:0.5px;text-transform:uppercase;border:1px solid rgba(16,185,129,0.15);font-family:'Plus Jakarta Sans',sans-serif}
+.impact-card{border-left-color:var(--at-red)!important;transition:all 0.3s}.impact-card:hover{box-shadow:0 0 0 1px rgba(237,28,36,0.1),0 4px 20px rgba(237,28,36,0.06)!important;transform:translateY(-2px)}
+.executive-summary::before{background:linear-gradient(90deg,var(--at-red),var(--accent),var(--purple))!important}
+.btn-apply-range{background:var(--at-red)!important;border:1px solid var(--at-red)!important;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-apply-range:hover{background:var(--at-red-dark)!important;box-shadow:0 4px 12px rgba(237,28,36,0.3)}
+.btn-apply-range.loading{cursor:not-allowed;opacity:0.95}
+.view-mode-btn.active{background:var(--at-red)!important}
+.search-input:focus{border-color:var(--at-red)!important;box-shadow:0 0 0 3px var(--at-glow)!important}
+.charts-heading>i,.weekly-heading>i,.insight-panel-heading>i{color:var(--at-red)!important}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--at-red)}
+.at-footer{position:fixed;bottom:0;left:0;width:100%;z-index:900;background:rgba(21,26,35,0.92);backdrop-filter:blur(16px) saturate(180%);border-top:1px solid rgba(237,28,36,0.08);padding:10px 30px;display:flex;justify-content:space-between;align-items:center;font-family:'Plus Jakarta Sans',sans-serif}
+body.light-theme .at-footer{background:rgba(255,255,255,0.92);border-top:1px solid rgba(237,28,36,0.06)}
+.at-footer-l{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--text-muted);font-weight:600}.at-footer-l .ft-red{color:var(--at-red);font-weight:800}.at-footer-l .ft-sep{opacity:0.3;margin:0 2px}
+.at-footer-r{display:flex;align-items:center;gap:14px;font-size:9px;color:var(--text-muted);font-weight:500}.at-footer-r .ft-dot{width:5px;height:5px;border-radius:50%;background:var(--success);display:inline-block}
+body{padding-bottom:95px!important}
 
-// ---- Get vendor for a user ----
-function getVendorForUser(userName) {
-    var base = fullNameToBase[userName] || extractBaseName(userName);
-    return baseVendor[base] || 'Unknown';
-}
+/* Analyze overlay */
+.analyze-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg,#0B0E14);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:28px;opacity:0;pointer-events:none;transition:opacity 0.4s}
+.analyze-overlay.active{opacity:1;pointer-events:all}.analyze-overlay.fade-out{opacity:0;pointer-events:none}
+.az-spinner{width:72px;height:72px;position:relative}
+.az-spinner .az-ring{position:absolute;width:100%;height:100%;border:3px solid transparent;border-radius:50%;animation:azSpin 1.2s ease-in-out infinite}
+.az-spinner .az-ring:nth-child(1){border-top-color:var(--at-red,var(--accent))}
+.az-spinner .az-ring:nth-child(2){width:56px;height:56px;top:8px;left:8px;border-right-color:var(--purple,#8b5cf6);animation-delay:0.15s;animation-direction:reverse}
+.az-spinner .az-ring:nth-child(3){width:40px;height:40px;top:16px;left:16px;border-bottom-color:var(--cyan,#06b6d4);animation-delay:0.3s}
+.az-center-dot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--at-red,var(--accent));animation:azPulse 1.5s ease-in-out infinite;box-shadow:0 0 16px var(--at-red,var(--accent))}
+@keyframes azSpin{to{transform:rotate(360deg)}}
+@keyframes azPulse{0%,100%{opacity:0.4;transform:translate(-50%,-50%) scale(0.85)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}}
+.az-brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.3px}
+.az-brand .ab-airtel{color:var(--at-red);font-weight:900}.az-brand .ab-mesh{color:var(--text-main)}.az-brand .ab-alpha{color:var(--accent)}
+.az-status{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim,#9CA3AF);letter-spacing:0.3px;min-height:20px;transition:all 0.3s}
+.az-sub{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:500;color:var(--text-muted,#6B7280);min-height:16px;margin-top:-16px}
+.az-bar-wrap{width:260px;height:4px;background:var(--border,#2A3241);border-radius:4px;overflow:hidden;margin-top:-10px}
+.az-bar-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,var(--at-red,var(--accent)),var(--purple,#8b5cf6),var(--cyan,#06b6d4));background-size:200% 100%;animation:azBarShift 2s ease infinite;transition:width 0.4s}
+@keyframes azBarShift{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+.az-counter{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text-muted);min-height:16px;margin-top:-14px;letter-spacing:1px}
+.az-btn-spinner{width:14px;height:14px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:azSpin 0.7s linear infinite;display:inline-block}
+.az-complete-flash{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);width:70px;height:70px;background:var(--at-red,var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10000;opacity:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1)}
+.az-complete-flash.show{transform:translate(-50%,-50%) scale(1);opacity:1}.az-complete-flash i{color:white;font-size:28px}
 
-// ---- HOOK boot(): Parse user.json ----
-var _origBootCF2 = boot;
+/* Report buttons */
+.report-btn-group{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}.report-btn-group.hidden{display:none}
+.btn-report-pdf{display:inline-flex;align-items:center;gap:8px;padding:9px 22px;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap;border:1.5px solid var(--at-red,#ED1C24);background:linear-gradient(135deg,var(--at-red,#ED1C24),#FF4D54);color:#fff;box-shadow:0 2px 12px rgba(237,28,36,0.25);transition:all 0.3s}
+.btn-report-pdf:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(237,28,36,0.35)}
+.btn-report-pdf:disabled{opacity:0.5;cursor:not-allowed}.btn-report-pdf.loading{background:linear-gradient(135deg,var(--at-red),#c41920);cursor:wait}
+.btn-report-pdf.success{background:linear-gradient(135deg,var(--success,#10b981),#34d399)!important;border-color:var(--success)!important}
+.btn-report-png{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap;border:1.5px solid var(--accent,#3b82f6);background:rgba(59,130,246,0.08);color:var(--accent);transition:all 0.3s}
+.btn-report-png:hover:not(:disabled){background:var(--accent);color:#fff;transform:translateY(-2px);box-shadow:0 4px 14px rgba(59,130,246,0.3)}
+.btn-report-png:disabled{opacity:0.5;cursor:not-allowed}.btn-report-png.loading{background:rgba(59,130,246,0.12);cursor:wait}
+.rpt-spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:azSpin 0.7s linear infinite;display:inline-block;flex-shrink:0}
+.rpt-spinner.blue{border-color:rgba(59,130,246,0.3);border-top-color:var(--accent)}
+.rpt-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(11,14,20,0.88);backdrop-filter:blur(8px);z-index:8000;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:24px;opacity:0;pointer-events:none;transition:opacity 0.35s}
+.rpt-overlay.active{opacity:1;pointer-events:all}body.light-theme .rpt-overlay{background:rgba(248,250,252,0.88)}
+.rpt-overlay-spinner{width:48px;height:48px;border:4px solid var(--border,#2A3241);border-top-color:var(--at-red);border-right-color:var(--accent);border-radius:50%;animation:azSpin 0.9s linear infinite}
+.rpt-overlay-text{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:var(--text-main)}
+.rpt-overlay-sub{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:500;color:var(--text-muted);margin-top:-14px}
+.rpt-overlay-bar{width:240px;height:3px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:-8px}
+.rpt-overlay-bar-fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--at-red),var(--accent));transition:width 0.5s}
+
+/* Loader rebrand */
+.mesh-loader-ring .ring:nth-child(1){border-top-color:var(--at-red)!important}
+.mesh-loader-ring .ring:nth-child(2){border-right-color:var(--at-red-light,#FF4D54)!important}
+.mesh-loader-bar-fill{background:linear-gradient(90deg,var(--at-red),var(--at-coral,#FF6B6B),var(--accent),var(--purple))!important;background-size:200% 100%;animation:azBarShift 2s ease infinite}
+`;
+document.head.appendChild(s);
+})();
+
+// ===================== SECTION 3: PAGE TITLE & FAVICON =====================
+document.title="Airtel MeshAlpha \u2014 R&D Fleet Intelligence Dashboard";
+document.querySelectorAll('link[rel*="icon"]').forEach(function(e){e.remove()});
+var _fav=document.createElement('link');_fav.rel='icon';_fav.type='image/png';_fav.href='https://favicon.im/airtel.in';document.head.appendChild(_fav);
+
+// ===================== SECTION 4: DOM — HEADER REBRAND =====================
+(function(){
+var brand=document.querySelector('.brand');
+if(!brand)return;
+brand.innerHTML='';brand.className='at-brand';
+var logo=document.createElement('div');logo.className='at-logo-wrap';
+logo.innerHTML='<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ED1C24"/><stop offset="100%" stop-color="#FF4D54"/></linearGradient><linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient><linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient><filter id="gw"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="100" cy="100" rx="88" ry="88" fill="none" stroke="#ED1C24" stroke-width="1" opacity="0.12" stroke-dasharray="6 4"/><ellipse cx="100" cy="100" rx="68" ry="68" fill="none" stroke="#3b82f6" stroke-width="0.8" opacity="0.08" stroke-dasharray="4 6"/><line x1="100" y1="30" x2="162" y2="70" stroke="url(#g1)" stroke-width="1.8" opacity="0.35"/><line x1="162" y1="70" x2="150" y2="145" stroke="url(#g2)" stroke-width="1.8" opacity="0.35"/><line x1="150" y1="145" x2="50" y2="145" stroke="url(#g3)" stroke-width="1.8" opacity="0.35"/><line x1="50" y1="145" x2="38" y2="70" stroke="url(#g1)" stroke-width="1.8" opacity="0.35"/><line x1="38" y1="70" x2="100" y2="30" stroke="url(#g1)" stroke-width="1.8" opacity="0.35"/><line x1="100" y1="100" x2="100" y2="30" stroke="#ED1C24" stroke-width="1.2" opacity="0.18"/><line x1="100" y1="100" x2="162" y2="70" stroke="#3b82f6" stroke-width="1.2" opacity="0.18"/><line x1="100" y1="100" x2="150" y2="145" stroke="#3b82f6" stroke-width="1.2" opacity="0.18"/><line x1="100" y1="100" x2="50" y2="145" stroke="#8b5cf6" stroke-width="1.2" opacity="0.18"/><line x1="100" y1="100" x2="38" y2="70" stroke="#ED1C24" stroke-width="1.2" opacity="0.18"/><circle cx="100" cy="30" r="9" fill="url(#g1)" filter="url(#gw)"/><circle cx="162" cy="70" r="8" fill="url(#g2)"/><circle cx="150" cy="145" r="8" fill="url(#g2)"/><circle cx="50" cy="145" r="8" fill="url(#g3)"/><circle cx="38" cy="70" r="8" fill="url(#g1)"/><circle cx="100" cy="30" r="3.5" fill="#fff" opacity="0.9"/><circle cx="162" cy="70" r="3" fill="#fff" opacity="0.8"/><circle cx="150" cy="145" r="3" fill="#fff" opacity="0.8"/><circle cx="50" cy="145" r="3" fill="#fff" opacity="0.8"/><circle cx="38" cy="70" r="3" fill="#fff" opacity="0.8"/><circle cx="100" cy="100" r="16" fill="url(#g1)" filter="url(#gw)" opacity="0.9"/><circle cx="100" cy="100" r="7" fill="#fff" opacity="0.95"/><path d="M88 92 Q94 80 100 92" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.85"/><path d="M83 85 Q92 70 100 85" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/><path d="M78 78 Q89 60 100 78" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/></svg>';
+brand.appendChild(logo);
+var dv=document.createElement('div');dv.className='at-divider';brand.appendChild(dv);
+var tx=document.createElement('div');tx.className='at-text';
+tx.innerHTML='<div class="at-title"><span class="t-airtel">airtel</span><span class="t-dot"> \u00B7 </span><span class="t-mesh">Mesh</span><span class="t-alpha">Alpha</span></div><div class="at-subtitle"><span class="at-tag-version">\u2726 v2.0</span><span class="at-tag-dept">\uD83D\uDCE1 R&D Fleet Intelligence</span><span class="at-tag-env">\u25CF LIVE</span></div>';
+brand.appendChild(tx);
+// Loader text rebrand
+var lb=document.querySelector('.mesh-loader-brand');
+if(lb)lb.innerHTML='<span style="color:var(--at-red);font-weight:900">airtel</span> <span style="color:var(--text-main);font-weight:800">Mesh</span><span style="color:var(--accent);font-weight:800">Alpha</span>';
+})();
+
+// ===================== SECTION 5: DOM — OVERLAYS + FOOTER =====================
+(function(){
+// Analyze overlay
+var ov=document.createElement('div');ov.id='analyzeOverlay';ov.className='analyze-overlay';
+ov.innerHTML='<div class="az-spinner"><div class="az-ring"></div><div class="az-ring"></div><div class="az-ring"></div><div class="az-center-dot"></div></div><div class="az-brand"><span class="ab-airtel">airtel</span><span class="ab-mesh"> Mesh</span><span class="ab-alpha">Alpha</span></div><div class="az-status" id="azStatus">Preparing Range Analysis...</div><div class="az-sub" id="azSub"></div><div class="az-bar-wrap"><div class="az-bar-fill" id="azBar"></div></div><div class="az-counter" id="azCounter"></div>';
+document.body.appendChild(ov);
+var fl=document.createElement('div');fl.id='azFlash';fl.className='az-complete-flash';fl.innerHTML='<i class="fas fa-check"></i>';document.body.appendChild(fl);
+// Report overlay
+var ro=document.createElement('div');ro.id='rptOverlay';ro.className='rpt-overlay';
+ro.innerHTML='<div class="rpt-overlay-spinner"></div><div class="rpt-overlay-text" id="rptOverlayText">Generating Report...</div><div class="rpt-overlay-sub" id="rptOverlaySub">Capturing dashboard sections</div><div class="rpt-overlay-bar"><div class="rpt-overlay-bar-fill" id="rptOverlayBar"></div></div>';
+document.body.appendChild(ro);
+// Footer
+var ft=document.createElement('div');ft.className='at-footer';
+ft.innerHTML='<div class="at-footer-l"><svg width="18" height="18" viewBox="0 0 200 200"><circle cx="100" cy="100" r="80" fill="none" stroke="#ED1C24" stroke-width="5" opacity="0.3"/><circle cx="100" cy="100" r="14" fill="#ED1C24"/><path d="M82 90 Q91 74 100 90" fill="none" stroke="#ED1C24" stroke-width="3.5" stroke-linecap="round" opacity="0.7"/><path d="M74 78 Q87 58 100 78" fill="none" stroke="#ED1C24" stroke-width="2.8" stroke-linecap="round" opacity="0.45"/></svg><span>Powered by <span class="ft-red">Airtel</span> R&D</span><span class="ft-sep">|</span><span>Mesh Analytics & Intelligence Platform</span></div><div class="at-footer-r"><span class="ft-dot"></span><span>System Operational</span><span>\u00B7</span><span>\u00A9 '+new Date().getFullYear()+' Bharti Airtel Limited</span><span>\u00B7</span><span>Internal & Confidential</span></div>';
+document.body.appendChild(ft);
+})();
+
+// ===================== SECTION 6: ANALYZE BUTTON HANDLERS =====================
+function showAnalyzeOverlay(){var o=document.getElementById('analyzeOverlay');if(o){o.classList.remove('fade-out');o.classList.add('active')}}
+function updateAnalyzeOverlay(t,s,p,c){var a=document.getElementById('azStatus'),b=document.getElementById('azSub'),d=document.getElementById('azBar'),e=document.getElementById('azCounter');if(a)a.textContent=t||'';if(b)b.textContent=s||'';if(d)d.style.width=(p||0)+'%';if(e)e.textContent=c||''}
+function hideAnalyzeOverlay(){var f=document.getElementById('azFlash');if(f){f.classList.add('show');setTimeout(function(){f.classList.remove('show')},800)}setTimeout(function(){var o=document.getElementById('analyzeOverlay');if(o){o.classList.add('fade-out');o.classList.remove('active')}},500)}
+function setAnalyzeBtnLoading(){var b=document.getElementById('analyzeBtn');if(!b)return;b.classList.add('loading');b.disabled=true;b.innerHTML='<span class="az-btn-spinner"></span><span class="btn-text">Analyzing\u2026</span>'}
+function resetAnalyzeBtn(){var b=document.getElementById('analyzeBtn');if(!b)return;b.classList.remove('loading');b.disabled=false;b.innerHTML='<i class="fas fa-chart-line"></i><span class="btn-text">ANALYZE</span>'}
+function handleAnalyzeClick(){setAnalyzeBtnLoading();showAnalyzeOverlay();updateAnalyzeOverlay('Preparing Range Analysis...','Validating date selection',2,'');setTimeout(function(){Promise.resolve(applyDateRange()).then(function(){updateAnalyzeOverlay('Analysis Complete!','Rendering insights...',100,'\u2714');hideAnalyzeOverlay()}).catch(function(err){console.error('Analyze error:',err);updateAnalyzeOverlay('Analysis Failed',err.message||'Check console',0,'\u2718');setTimeout(hideAnalyzeOverlay,1500)}).finally(function(){setTimeout(resetAnalyzeBtn,600)})},100)}
+
+// ===================== SECTION 7: REPORT BUTTON HELPERS =====================
+function showRptOverlay(t,s,p){var o=document.getElementById('rptOverlay');if(o)o.classList.add('active');updateRptOverlay(t,s,p)}
+function updateRptOverlay(t,s,p){var a=document.getElementById('rptOverlayText'),b=document.getElementById('rptOverlaySub'),c=document.getElementById('rptOverlayBar');if(a&&t)a.textContent=t;if(b)b.textContent=s||'';if(c)c.style.width=(p||0)+'%'}
+function hideRptOverlay(){var o=document.getElementById('rptOverlay');if(o)o.classList.remove('active')}
+function enableReportButtons(){var g=document.getElementById('reportBtnGroup'),a=document.getElementById('btnReportPDF'),b=document.getElementById('btnReportPNG');if(g)g.classList.remove('hidden');if(a)a.disabled=false;if(b)b.disabled=false}
+
+// Inject report buttons into weekly heading
+(function(){var h=document.querySelector('.weekly-heading');if(!h)return;var g=document.createElement('div');g.className='report-btn-group hidden';g.id='reportBtnGroup';g.innerHTML='<button class="btn-report-png" id="btnReportPNG" onclick="exportRangeReportPNG()" disabled><i class="fas fa-image"></i><span class="rpt-btn-text">PNG</span></button><button class="btn-report-pdf" id="btnReportPDF" onclick="exportRangeReportPDF()" disabled><i class="fas fa-file-pdf"></i><span class="rpt-btn-text">Download Report</span></button>';var rl=h.querySelector('#rangeLabel');if(rl)h.insertBefore(g,rl);else h.appendChild(g)})();
+
+// Hook generateUserInsights to enable report buttons
+var _origGenUI=generateUserInsights;
+generateUserInsights=function(){_origGenUI.apply(this,arguments);enableReportButtons()};
+
+// ===================== SECTION 8: PDF EXPORT =====================
+async function exportRangeReportPDF(){var btn=document.getElementById('btnReportPDF');if(!btn||btn.disabled)return;btn.classList.add('loading');btn.disabled=true;btn.innerHTML='<span class="rpt-spinner"></span><span class="rpt-btn-text">Generating\u2026</span>';showRptOverlay('Generating PDF Report...','Preparing canvas capture',5);try{await new Promise(function(r){setTimeout(r,300)});var section=document.getElementById('weeklyInsightsSection');if(!section)throw new Error('No range data');var bgColor=getComputedStyle(document.body).getPropertyValue('--bg').trim()||'#0B0E14';updateRptOverlay('Capturing Analytics...','Rendering charts to canvas',25);await new Promise(function(r){setTimeout(r,200)});var canvas=await html2canvas(section,{scale:1.5,useCORS:true,backgroundColor:bgColor,logging:false,windowWidth:section.scrollWidth,windowHeight:section.scrollHeight});updateRptOverlay('Building PDF Pages...','Composing multi-page layout',60);await new Promise(function(r){setTimeout(r,200)});var jP=window.jspdf,pdf=new jP.jsPDF({orientation:'landscape',unit:'mm',format:'a4'});var pW=pdf.internal.pageSize.getWidth(),pH=pdf.internal.pageSize.getHeight(),mg=10,hH=16,fH=10,uH=pH-mg*2-hH-fH,uW=pW-mg*2;var iW=uW,iH=(canvas.height*iW)/canvas.width;var tP=Math.ceil(iH/uH);var ds=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});var ts=new Date().toLocaleTimeString();var rt=(document.getElementById('rangeLabel')||{}).textContent||'';for(var i=0;i<tP;i++){if(i>0)pdf.addPage();var pp=60+Math.round(((i+1)/tP)*30);updateRptOverlay('Building PDF Pages...','Page '+(i+1)+' of '+tP,pp);pdf.setFillColor(21,26,35);pdf.rect(0,0,pW,hH+mg,'F');pdf.setFillColor(237,28,36);pdf.rect(0,0,pW,1.5,'F');pdf.setFont('helvetica','bold');pdf.setFontSize(13);pdf.setTextColor(237,28,36);pdf.text('airtel',mg,mg+6);var aw=pdf.getTextWidth('airtel');pdf.setTextColor(243,244,246);pdf.text(' MeshAlpha',mg+aw,mg+6);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(156,163,175);pdf.text('Fleet Intelligence Report  |  '+rt,mg,mg+11);pdf.text(ds+'  '+ts,pW-mg,mg+6,{align:'right'});pdf.text('Page '+(i+1)+' / '+tP,pW-mg,mg+11,{align:'right'});var sY=i*(canvas.height*uH/iH);var sH=Math.min(canvas.height*uH/iH,canvas.height-sY);var sc=document.createElement('canvas');sc.width=canvas.width;sc.height=sH;var cx=sc.getContext('2d');cx.drawImage(canvas,0,sY,canvas.width,sH,0,0,canvas.width,sH);var sd=sc.toDataURL('image/jpeg',0.92);var sh=(sH*iW)/canvas.width;pdf.addImage(sd,'JPEG',mg,mg+hH,iW,sh);pdf.setFillColor(21,26,35);pdf.rect(0,pH-fH-2,pW,fH+2,'F');pdf.setFillColor(237,28,36);pdf.rect(0,pH-fH-2,pW,0.8,'F');pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(107,114,128);pdf.text('Confidential \u2014 Bharti Airtel Ltd. \u2014 R&D Fleet Intelligence',mg,pH-4);pdf.text('Generated: '+ds+' '+ts,pW-mg,pH-4,{align:'right'})}updateRptOverlay('Saving PDF...','Downloading',98);await new Promise(function(r){setTimeout(r,200)});var fn='Airtel_MeshAlpha_Report_'+new Date().toISOString().split('T')[0]+'.pdf';pdf.save(fn);updateRptOverlay('Report Downloaded!',fn,100);btn.classList.remove('loading');btn.classList.add('success');btn.innerHTML='<i class="fas fa-check"></i><span class="rpt-btn-text">Downloaded!</span>';setTimeout(function(){hideRptOverlay();btn.classList.remove('success');btn.disabled=false;btn.innerHTML='<i class="fas fa-file-pdf"></i><span class="rpt-btn-text">Download Report</span>'},2000)}catch(err){console.error('PDF Error:',err);hideRptOverlay();btn.classList.remove('loading');btn.disabled=false;btn.innerHTML='<i class="fas fa-file-pdf"></i><span class="rpt-btn-text">Download Report</span>';alert('PDF generation failed.')}}
+
+// ===================== SECTION 9: PNG EXPORT =====================
+async function exportRangeReportPNG(){var btn=document.getElementById('btnReportPNG');if(!btn||btn.disabled)return;btn.classList.add('loading');btn.disabled=true;btn.innerHTML='<span class="rpt-spinner blue"></span><span class="rpt-btn-text">Capturing\u2026</span>';showRptOverlay('Capturing Screenshot...',null,30);try{await new Promise(function(r){setTimeout(r,300)});var section=document.getElementById('weeklyInsightsSection');if(!section)throw new Error('No data');var bgColor=getComputedStyle(document.body).getPropertyValue('--bg').trim()||'#0B0E14';updateRptOverlay('Rendering Canvas...','2x resolution',60);var canvas=await html2canvas(section,{scale:2,useCORS:true,backgroundColor:bgColor,logging:false});updateRptOverlay('Saving PNG...',null,95);await new Promise(function(r){setTimeout(r,200)});var lk=document.createElement('a');lk.download='Airtel_MeshAlpha_'+new Date().toISOString().split('T')[0]+'.png';lk.href=canvas.toDataURL('image/png');lk.click();updateRptOverlay('Screenshot Saved!',lk.download,100);btn.classList.remove('loading');btn.innerHTML='<i class="fas fa-check" style="color:var(--success)"></i><span class="rpt-btn-text">Saved!</span>';setTimeout(function(){hideRptOverlay();btn.disabled=false;btn.innerHTML='<i class="fas fa-image"></i><span class="rpt-btn-text">PNG</span>'},1800)}catch(err){console.error('PNG Error:',err);hideRptOverlay();btn.classList.remove('loading');btn.disabled=false;btn.innerHTML='<i class="fas fa-image"></i><span class="rpt-btn-text">PNG</span>'}}
+
+// ===================== SECTION 10: HOOK boot() — Parse user.json =====================
+var _origBootMaster = boot;
 boot = async function() {
     try {
         var res = await fetch(USER_METADATA_FILE);
         var userJson = await res.json();
-
         userJson.forEach(function(u) {
             var fullName = (u.user || '').trim();
             if (!fullName) return;
-
             var serial = (u.serial || '').toString().trim().toUpperCase();
             var base = extractBaseName(fullName);
-
             fullNameToBase[fullName] = base;
-
-            if (serial) {
-                serialToBase[serial] = base;
-            }
-
+            if (serial) serialToBase[serial] = base;
             if (!baseExtCount[base]) baseExtCount[base] = 0;
-
-            // Count ONLY extenders (skip Root)
-            if (isExtenderEntry(fullName)) {
-                baseExtCount[base]++;
-            }
-
-            // Vendor from ROOT serial prefix ONLY
-            if (isRootEntry(fullName) && serial) {
-                baseVendor[base] = getVendorFromSerial(serial);
-            }
+            if (isExtenderEntry(fullName)) baseExtCount[base]++;
+            if (isRootEntry(fullName) && serial) baseVendor[base] = getVendorFromSerial(serial);
         });
-
-        console.log('[CHART FIX v2] Parsed user.json:');
-        console.log('  Households:', Object.keys(baseExtCount).length);
-        console.log('  Extender counts:', baseExtCount);
-        console.log('  Vendor map:', baseVendor);
-    } catch (e) {
-        console.warn('[CHART FIX v2] Could not parse user.json:', e);
-    }
-
-    await _origBootCF2();
+        console.log('[MASTER] user.json parsed. Households:', Object.keys(baseExtCount).length, 'Vendors:', baseVendor);
+    } catch (e) { console.warn('[MASTER] user.json parse error:', e); }
+    await _origBootMaster();
 };
 
-// ---- HOOK computeDayMetrics(): Add expectedExtenders ----
+// ===================== SECTION 11: HOOK computeDayMetrics() =====================
 var _origComputeDay = computeDayMetrics;
 computeDayMetrics = function(rows) {
     var result = _origComputeDay(rows);
-
-    // Scan rows for unique serials → active households
     var activeSerials = new Set();
-    rows.forEach(function(row) {
-        var sn = (row.ont_serial_no || '').toString().trim().toUpperCase();
-        if (sn) activeSerials.add(sn);
-    });
-
+    rows.forEach(function(row) { var sn = (row.ont_serial_no || '').toString().trim().toUpperCase(); if (sn) activeSerials.add(sn); });
     var activeHouseholds = new Set();
-    activeSerials.forEach(function(sn) {
-        var base = serialToBase[sn];
-        if (base) activeHouseholds.add(base);
-    });
-
-    // Sum extender counts ONLY for active households
-    var expectedExtenders = 0;
-    activeHouseholds.forEach(function(base) {
-        expectedExtenders += (baseExtCount[base] || 0);
-    });
-
-    result.expectedExtenders = expectedExtenders;
+    activeSerials.forEach(function(sn) { var b = serialToBase[sn]; if (b) activeHouseholds.add(b); });
+    var exp = 0;
+    activeHouseholds.forEach(function(b) { exp += (baseExtCount[b] || 0); });
+    result.expectedExtenders = exp;
     result.activeHouseholds = activeHouseholds.size;
-
-    // Per-user expected extenders
-    Object.keys(result.perUser).forEach(function(userName) {
-        result.perUser[userName].expectedExtenders = getExtCountForUser(userName);
-    });
-
+    Object.keys(result.perUser).forEach(function(u) { result.perUser[u].expectedExtenders = getExtCountForUser(u); });
     return result;
 };
 
-// ---- OVERRIDE detectUserIssues(): Fix vendor from baseVendor ----
+// ===================== SECTION 12: HOOK detectUserIssues() — Fix vendor =====================
 if (typeof detectUserIssues === 'function') {
     var _origDetect = detectUserIssues;
     detectUserIssues = function(userName) {
         var result = _origDetect(userName);
-        // Override vendor with correct value from user.json ROOT serial
         result.vendor = getVendorForUser(userName);
         return result;
     };
 }
 
-// ---- POST-HOOK: Fix 3 charts after renderWeeklyInsightsV2 ----
-var _origRenderWkCF2 = renderWeeklyInsightsV2;
+// ===================== SECTION 13: HOOK renderWeeklyInsightsV2() — Fix 3 charts =====================
+var _origRenderWk = renderWeeklyInsightsV2;
 renderWeeklyInsightsV2 = function() {
-    _origRenderWkCF2();
-
+    _origRenderWk();
     var labels = Object.keys(perDayMetrics);
     var M = Object.values(perDayMetrics);
     if (!labels.length) return;
-
-    var selectedUser = (document.getElementById('headerUserFilter') || {}).value ||
-                       (document.getElementById('userFilter') || {}).value || 'ALL';
-
+    var selU = (document.getElementById('headerUserFilter') || {}).value || (document.getElementById('userFilter') || {}).value || 'ALL';
     var metrics;
-    if (selectedUser !== 'ALL') {
+    if (selU !== 'ALL') {
         metrics = labels.map(function(label) {
-            var pu = perDayPerUserMetrics[selectedUser] &&
-                     perDayPerUserMetrics[selectedUser][label];
-            if (!pu) return {
-                tot2g:0, tot5g:0, podsOnline:0, podsOffline:0,
-                podsExcellent:0, podsDegraded:0, podsCritical:0, expectedExtenders:0
-            };
-            return {
-                tot2g: pu.avgTot2g || 0,
-                tot5g: pu.avgTot5g || 0,
-                podsOnline: pu.podsOnline || 0,
-                podsOffline: pu.podsOffline || 0,
-                podsExcellent: pu.podsOnline || 0,
-                podsDegraded: 0,
-                podsCritical: pu.podsOffline || 0,
-                expectedExtenders: pu.expectedExtenders || getExtCountForUser(selectedUser)
-            };
+            var pu = perDayPerUserMetrics[selU] && perDayPerUserMetrics[selU][label];
+            if (!pu) return {tot2g:0,tot5g:0,podsOnline:0,podsOffline:0,podsExcellent:0,podsDegraded:0,podsCritical:0,expectedExtenders:0};
+            return {tot2g:pu.avgTot2g||0,tot5g:pu.avgTot5g||0,podsOnline:pu.podsOnline||0,podsOffline:pu.podsOffline||0,podsExcellent:pu.podsOnline||0,podsDegraded:0,podsCritical:pu.podsOffline||0,expectedExtenders:pu.expectedExtenders||getExtCountForUser(selU)};
         });
-    } else {
-        metrics = M;
-    }
+    } else { metrics = M; }
+    var gc='rgba(42,50,65,0.4)',tc2='#6B7280';
+    var sx={grid:{color:gc},ticks:{color:'#9CA3AF',font:{size:10,family:"'Plus Jakarta Sans'"},maxRotation:45}};
+    var sy={grid:{color:gc},ticks:{color:tc2,font:{size:10}},beginAtZero:true};
+    var lg={position:'bottom',labels:{color:'#9CA3AF',font:{size:10,family:"'Plus Jakarta Sans'"},padding:10,usePointStyle:true}};
 
-    // Chart styling
-    var gc = 'rgba(42,50,65,0.4)', tc2 = '#6B7280';
-    var sx = {
-        grid: { color: gc },
-        ticks: { color: '#9CA3AF', font: { size: 10, family: "'Plus Jakarta Sans'" }, maxRotation: 45 }
-    };
-    var sy = {
-        grid: { color: gc },
-        ticks: { color: tc2, font: { size: 10 } },
-        beginAtZero: true
-    };
-    var lg = {
-        position: 'bottom',
-        labels: { color: '#9CA3AF', font: { size: 10, family: "'Plus Jakarta Sans'" }, padding: 10, usePointStyle: true }
-    };
+    // FIX 1: Band TOT — unstacked
+    if(weeklyChartInstances.bandTOT)weeklyChartInstances.bandTOT.destroy();
+    weeklyChartInstances.bandTOT=new Chart(document.getElementById('wkChartBandTOT'),{type:'line',data:{labels:labels,datasets:[{label:'5 GHz TOT %',data:metrics.map(function(m){return m.tot5g}),backgroundColor:'rgba(6,182,212,0.12)',borderColor:'#06b6d4',borderWidth:2.5,fill:true,tension:0.35,pointRadius:5,pointBackgroundColor:'#06b6d4',pointHoverRadius:7},{label:'2.4 GHz TOT %',data:metrics.map(function(m){return m.tot2g}),backgroundColor:'rgba(249,115,22,0.12)',borderColor:'#f97316',borderWidth:2.5,fill:true,tension:0.35,pointRadius:5,pointBackgroundColor:'#f97316',pointHoverRadius:7}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:sx,y:Object.assign({},sy,{stacked:false,max:100,title:{display:true,text:'Avg TOT %',color:tc2,font:{size:10}}})},plugins:{legend:lg}}});
 
-    // ==========================================================
-    // FIX 1: BAND TOT — TWO INDEPENDENT LINES (NOT STACKED)
-    // ==========================================================
-    if (weeklyChartInstances.bandTOT) weeklyChartInstances.bandTOT.destroy();
+    // FIX 2: Pod Health — Offline = expected - online
+    if(weeklyChartInstances.podHealth)weeklyChartInstances.podHealth.destroy();
+    var offlinePods=metrics.map(function(m){return Math.max(0,(m.expectedExtenders||0)-(m.podsOnline||0))});
+    weeklyChartInstances.podHealth=new Chart(document.getElementById('wkChartPodHealth'),{type:'bar',data:{labels:labels,datasets:[{label:'Online',data:metrics.map(function(m){return m.podsOnline}),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4},{label:'Offline',data:offlinePods,backgroundColor:'rgba(239,68,68,0.7)',borderColor:'#ef4444',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:Object.assign({},sx,{stacked:true}),y:Object.assign({},sy,{stacked:true,title:{display:true,text:'Extenders',color:tc2,font:{size:10}}})},plugins:{legend:lg}}});
 
-    weeklyChartInstances.bandTOT = new Chart(document.getElementById('wkChartBandTOT'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: '5 GHz TOT %',
-                    data: metrics.map(function(m) { return m.tot5g; }),
-                    backgroundColor: 'rgba(6,182,212,0.12)',
-                    borderColor: '#06b6d4',
-                    borderWidth: 2.5,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#06b6d4',
-                    pointHoverRadius: 7
-                },
-                {
-                    label: '2.4 GHz TOT %',
-                    data: metrics.map(function(m) { return m.tot2g; }),
-                    backgroundColor: 'rgba(249,115,22,0.12)',
-                    borderColor: '#f97316',
-                    borderWidth: 2.5,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#f97316',
-                    pointHoverRadius: 7
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: sx,
-                y: Object.assign({}, sy, {
-                    stacked: false,
-                    max: 100,
-                    title: { display: true, text: 'Avg TOT %', color: tc2, font: { size: 10 } }
-                })
-            },
-            plugins: { legend: lg }
-        }
-    });
+    // FIX 3: Pod Uptime — Offline = expected - (excellent + degraded)
+    if(weeklyChartInstances.uptime)weeklyChartInstances.uptime.destroy();
+    var utOff=metrics.map(function(m){return Math.max(0,(m.expectedExtenders||0)-((m.podsExcellent||0)+(m.podsDegraded||0)))});
+    weeklyChartInstances.uptime=new Chart(document.getElementById('wkChartUptime'),{type:'bar',data:{labels:labels,datasets:[{label:'Excellent \u226595%',data:metrics.map(function(m){return m.podsExcellent}),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4},{label:'Degraded 50-95%',data:metrics.map(function(m){return m.podsDegraded}),backgroundColor:'rgba(245,158,11,0.7)',borderColor:'#f59e0b',borderWidth:1,borderRadius:4},{label:'Offline / Missing',data:utOff,backgroundColor:'rgba(239,68,68,0.7)',borderColor:'#ef4444',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:Object.assign({},sx,{stacked:true}),y:Object.assign({},sy,{stacked:true,title:{display:true,text:'Extenders',color:tc2,font:{size:10}}})},plugins:{legend:lg}}});
 
-    // ==========================================================
-    // FIX 2: POD HEALTH — Online + Offline (remaining = expected - online)
-    // ==========================================================
-    if (weeklyChartInstances.podHealth) weeklyChartInstances.podHealth.destroy();
-
-    // Calculate: Offline = expectedExtenders - podsOnline (clamped to 0)
-    var offlinePods = metrics.map(function(m) {
-        var offline = (m.expectedExtenders || 0) - (m.podsOnline || 0);
-        return Math.max(0, offline);
-    });
-
-    weeklyChartInstances.podHealth = new Chart(document.getElementById('wkChartPodHealth'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Online',
-                    data: metrics.map(function(m) { return m.podsOnline; }),
-                    backgroundColor: 'rgba(16,185,129,0.7)',
-                    borderColor: '#10b981', borderWidth: 1, borderRadius: 4
-                },
-                {
-                    label: 'Offline',
-                    data: offlinePods,
-                    backgroundColor: 'rgba(239,68,68,0.7)',
-                    borderColor: '#ef4444', borderWidth: 1, borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: {
-                x: Object.assign({}, sx, { stacked: true }),
-                y: Object.assign({}, sy, {
-                    stacked: true,
-                    title: { display: true, text: 'Extenders', color: tc2, font: { size: 10 } }
-                })
-            },
-            plugins: { legend: lg }
-        }
-    });
-
-    // ==========================================================
-    // FIX 3: POD UPTIME — Excellent + Degraded + Critical/Offline
-    // ==========================================================
-    if (weeklyChartInstances.uptime) weeklyChartInstances.uptime.destroy();
-
-    // Calculate: Offline = expectedExtenders - (excellent + degraded)
-    var uptimeOffline = metrics.map(function(m) {
-        var accounted = (m.podsExcellent || 0) + (m.podsDegraded || 0);
-        var offline = (m.expectedExtenders || 0) - accounted;
-        return Math.max(0, offline);
-    });
-
-    weeklyChartInstances.uptime = new Chart(document.getElementById('wkChartUptime'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Excellent \u226595%',
-                    data: metrics.map(function(m) { return m.podsExcellent; }),
-                    backgroundColor: 'rgba(16,185,129,0.7)',
-                    borderColor: '#10b981', borderWidth: 1, borderRadius: 4
-                },
-                {
-                    label: 'Degraded 50-95%',
-                    data: metrics.map(function(m) { return m.podsDegraded; }),
-                    backgroundColor: 'rgba(245,158,11,0.7)',
-                    borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4
-                },
-                {
-                    label: 'Offline / Missing',
-                    data: uptimeOffline,
-                    backgroundColor: 'rgba(239,68,68,0.7)',
-                    borderColor: '#ef4444', borderWidth: 1, borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: {
-                x: Object.assign({}, sx, { stacked: true }),
-                y: Object.assign({}, sy, {
-                    stacked: true,
-                    title: { display: true, text: 'Extenders', color: tc2, font: { size: 10 } }
-                })
-            },
-            plugins: { legend: lg }
-        }
-    });
-
-    console.log('[CHART FIX v2] Rebuilt charts. Offline = Expected - Online. Vendor:', baseVendor);
+    console.log('[MASTER] Charts rebuilt. Vendor:', baseVendor);
 };
 
+// ===================== SECTION 14: OVERRIDE applyDateRange WITH PROGRESS =====================
+applyDateRange = async function() {
+    var fromIdx = parseInt(document.getElementById('dateFrom').value);
+    var toIdx = parseInt(document.getElementById('dateTo').value);
+    if (fromIdx > toIdx) { hideAnalyzeOverlay(); resetAnalyzeBtn(); alert('FROM date must be before TO date.'); return; }
+    var display = document.getElementById('fleetDisplay');
+    display.innerHTML = '';
+    var selectedFiles = FILE_LIST.slice(fromIdx, toIdx + 1);
+    var totalFiles = selectedFiles.length;
+    perDayMetrics = {}; perDayPerUserMetrics = {};
+    var allRows = []; fileClientData = {};
+    for (var i = 0; i < totalFiles; i++) {
+        var f = selectedFiles[i];
+        var label = f.replace('filtered_mesh_output_', '').replace('.csv', '').replace(/_/g, ' ');
+        var pct = 5 + Math.round((i / totalFiles) * 70);
+        updateAnalyzeOverlay('Loading Fleet Data...', label, pct, (i + 1) + ' / ' + totalFiles + ' files');
+        try {
+            var res = await fetch(f);
+            var text = await res.text();
+            var parsed = Papa.parse(text, { header: true, dynamicTyping: true, skipEmptyLines: true });
+            var normalized = parsed.data.map(normalizeRow);
+            allRows = allRows.concat(normalized);
+            fileClientData[f] = normalized.filter(function(r) { return isClientRow(r); });
+            var dayM = computeDayMetrics(normalized);
+            perDayMetrics[label] = dayM;
+            Object.keys(dayM.perUser).forEach(function(u) {
+                if (!perDayPerUserMetrics[u]) perDayPerUserMetrics[u] = {};
+                perDayPerUserMetrics[u][label] = dayM.perUser[u];
+            });
+        } catch (e) { console.warn('Failed:', f, e); }
+    }
+    updateAnalyzeOverlay('Processing Telemetry...', 'Computing diagnostics', 80, totalFiles + ' / ' + totalFiles);
+    await new Promise(function(r) { setTimeout(r, 150); });
+    processData(allRows);
+    updateAnalyzeOverlay('Building Charts...', 'Rendering analytics', 90, '');
+    await new Promise(function(r) { setTimeout(r, 150); });
+    var labels = Object.keys(perDayMetrics);
+    document.getElementById('rangeLabel').textContent = labels[0] + ' \u2192 ' + labels[labels.length - 1] + ' (' + labels.length + ' days)';
+    document.getElementById('weeklyInsightsSection').classList.add('active');
+    renderWeeklyInsightsV2();
+    updateAnalyzeOverlay('Generating Summary...', 'AI-powered analysis', 95, '');
+    await new Promise(function(r) { setTimeout(r, 150); });
+    generateExecutiveSummary();
+    generateUserInsights();
+    updateAnalyzeOverlay('Analysis Complete!', labels.length + ' days \u2022 ' + Object.keys(perDayPerUserMetrics).length + ' users', 100, '\u2714 Done');
+    var lrt = document.getElementById('lastRefreshTime');
+    if (lrt) lrt.textContent = 'Refreshed ' + new Date().toLocaleTimeString();
+    setTimeout(function() { document.getElementById('weeklyInsightsSection').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 800);
+};
+
+console.log('%c\u2728 [AIRTEL MESHALPHA] Master Patch v2.0 loaded','color:#ED1C24;font-weight:bold;font-size:13px;background:#1a0203;padding:4px 12px;border-radius:4px');
 // ============================================================
-// END — CHART FIXES PATCH v2
+// END — MASTER PATCH
 // ============================================================
 
 
