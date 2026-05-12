@@ -1829,6 +1829,331 @@ generateUserInsights=function(){
 // END OF ENHANCEMENT PATCH
 // ============================================================
 
+// ============================================================
+// AIRTEL MESHALPHA — COMPLETE REBRAND PATCH
+// Paste this BEFORE initTheme()/boot() in your existing <script>
+// ============================================================
+
+(function airtelRebrand() {
+
+// ========== 1. UPDATE PAGE TITLE & FAVICON ==========
+document.title = "Airtel MeshAlpha | R\u0026D Fleet Dashboard v2.0";
+
+// Remove existing favicons
+document.querySelectorAll('link[rel*="icon"]').forEach(el => el.remove());
+// Inject Airtel favicon
+const fav = document.createElement('link');
+fav.rel = 'icon';
+fav.type = 'image/png';
+fav.href = 'https://favicon.im/airtel.in';
+document.head.appendChild(fav);
+
+// ========== 2. INJECT AIRTEL BRAND CSS ==========
+const style = document.createElement('style');
+style.id = 'airtelBrandCSS';
+style.textContent = `
+/* === AIRTEL BRAND COLORS === */
+:root {
+    --airtel-red: #ED1C24;
+    --airtel-red-dark: #C41920;
+    --airtel-red-glow: rgba(237, 28, 36, 0.15);
+    --airtel-red-soft: rgba(237, 28, 36, 0.08);
+    --airtel-gradient: linear-gradient(135deg, #ED1C24 0%, #FF4D54 100%);
+}
+
+/* === TOP BRAND STRIPE === */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--airtel-gradient);
+    z-index: 10000;
+}
+
+/* === HEADER REBRAND === */
+.header {
+    border-bottom: 1px solid var(--border);
+    padding-top: calc(1rem + 3px) !important;
+    background: linear-gradient(180deg, rgba(237,28,36,0.04) 0%, rgba(21,26,35,0.95) 40%) !important;
+}
+body.light-theme .header {
+    background: linear-gradient(180deg, rgba(237,28,36,0.03) 0%, rgba(255,255,255,0.92) 40%) !important;
+}
+
+/* === AIRTEL BRAND LOGO AREA === */
+.airtel-brand-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.airtel-logo-mark {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.airtel-logo-mark svg {
+    width: 42px;
+    height: 42px;
+}
+.airtel-brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.airtel-brand-title {
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    color: var(--text-main);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.airtel-brand-title .airtel-word {
+    color: var(--airtel-red);
+    font-weight: 900;
+}
+.airtel-brand-title .mesh-word {
+    color: var(--text-main);
+}
+.airtel-brand-title .alpha-word {
+    color: var(--accent);
+}
+.airtel-brand-sub {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.airtel-version-tag {
+    font-weight: 700;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--airtel-red-soft);
+    color: var(--airtel-red);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    border: 1px solid rgba(237,28,36,0.2);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.airtel-dept-tag {
+    font-weight: 600;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--border);
+    color: var(--text-dim);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.airtel-divider {
+    width: 1px;
+    height: 36px;
+    background: var(--border);
+    margin: 0 4px;
+}
+
+/* === LOADER REBRAND === */
+.mesh-loader-overlay {
+    background: var(--bg) !important;
+}
+.mesh-loader-ring .ring:nth-child(1) {
+    border-top-color: var(--airtel-red) !important;
+}
+.mesh-loader-brand {
+    font-size: 20px !important;
+    letter-spacing: 0px !important;
+}
+.mesh-loader-brand .loader-airtel {
+    color: var(--airtel-red);
+    font-weight: 900;
+}
+.mesh-loader-brand .loader-mesh {
+    color: var(--text-main);
+    font-weight: 800;
+}
+.mesh-loader-brand .loader-alpha {
+    color: var(--accent);
+    font-weight: 800;
+}
+.mesh-loader-bar-fill {
+    background: linear-gradient(90deg, var(--airtel-red), var(--accent), var(--purple)) !important;
+}
+
+/* === ACCENT TOUCHES === */
+.impact-card { border-left-color: var(--airtel-red) !important; }
+.impact-card.crit { border-left-color: var(--airtel-red) !important; }
+.executive-summary::before {
+    background: linear-gradient(90deg, var(--airtel-red), var(--accent), var(--purple)) !important;
+}
+.btn-apply-range {
+    background: var(--airtel-red) !important;
+    border: 1px solid var(--airtel-red) !important;
+}
+.btn-apply-range:hover {
+    background: var(--airtel-red-dark) !important;
+}
+.view-mode-btn.active {
+    background: var(--airtel-red) !important;
+}
+
+/* === FOOTER BADGE === */
+.airtel-footer {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%;
+    background: rgba(21,26,35,0.95);
+    border-top: 1px solid var(--border);
+    padding: 10px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 900;
+    backdrop-filter: blur(10px);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+body.light-theme .airtel-footer {
+    background: rgba(255,255,255,0.95);
+}
+.airtel-footer-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+.airtel-footer-left .footer-airtel {
+    color: var(--airtel-red);
+    font-weight: 800;
+}
+.airtel-footer-right {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+body { padding-bottom: 100px !important; }
+
+/* === SCROLLBAR WITH AIRTEL RED === */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--airtel-red); }
+`;
+document.head.appendChild(style);
+
+// ========== 3. REBRAND HEADER DOM ==========
+const brandDiv = document.querySelector('.brand');
+if (brandDiv) {
+    brandDiv.innerHTML = '';
+    brandDiv.className = 'airtel-brand-area';
+
+    // Airtel-style mesh network SVG icon
+    const logoMark = document.createElement('div');
+    logoMark.className = 'airtel-logo-mark';
+    logoMark.innerHTML = `
+    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer ring -->
+        <circle cx="60" cy="60" r="56" fill="none" stroke="#ED1C24" stroke-width="3" opacity="0.3"/>
+        <!-- Inner ring -->
+        <circle cx="60" cy="60" r="38" fill="none" stroke="#ED1C24" stroke-width="2" opacity="0.15"/>
+        <!-- Mesh network nodes -->
+        <circle cx="60" cy="28" r="7" fill="#ED1C24"/>
+        <circle cx="88" cy="52" r="7" fill="#3b82f6"/>
+        <circle cx="80" cy="85" r="7" fill="#3b82f6"/>
+        <circle cx="40" cy="85" r="7" fill="#8b5cf6"/>
+        <circle cx="32" cy="52" r="7" fill="#ED1C24"/>
+        <circle cx="60" cy="60" r="9" fill="#ED1C24" opacity="0.9"/>
+        <!-- Mesh connections -->
+        <line x1="60" y1="28" x2="88" y2="52" stroke="#ED1C24" stroke-width="1.5" opacity="0.4"/>
+        <line x1="88" y1="52" x2="80" y2="85" stroke="#3b82f6" stroke-width="1.5" opacity="0.4"/>
+        <line x1="80" y1="85" x2="40" y2="85" stroke="#8b5cf6" stroke-width="1.5" opacity="0.4"/>
+        <line x1="40" y1="85" x2="32" y2="52" stroke="#ED1C24" stroke-width="1.5" opacity="0.4"/>
+        <line x1="32" y1="52" x2="60" y2="28" stroke="#ED1C24" stroke-width="1.5" opacity="0.4"/>
+        <!-- Center connections -->
+        <line x1="60" y1="60" x2="60" y2="28" stroke="#ED1C24" stroke-width="1" opacity="0.25"/>
+        <line x1="60" y1="60" x2="88" y2="52" stroke="#3b82f6" stroke-width="1" opacity="0.25"/>
+        <line x1="60" y1="60" x2="80" y2="85" stroke="#3b82f6" stroke-width="1" opacity="0.25"/>
+        <line x1="60" y1="60" x2="40" y2="85" stroke="#8b5cf6" stroke-width="1" opacity="0.25"/>
+        <line x1="60" y1="60" x2="32" y2="52" stroke="#ED1C24" stroke-width="1" opacity="0.25"/>
+        <!-- Signal waves from center -->
+        <path d="M50 55 Q55 48 60 55" fill="none" stroke="#ED1C24" stroke-width="1.5" opacity="0.5"/>
+        <path d="M46 50 Q53 40 60 50" fill="none" stroke="#ED1C24" stroke-width="1.2" opacity="0.35"/>
+        <path d="M42 45 Q51 32 60 45" fill="none" stroke="#ED1C24" stroke-width="1" opacity="0.2"/>
+    </svg>`;
+    brandDiv.appendChild(logoMark);
+
+    // Divider
+    const divider = document.createElement('div');
+    divider.className = 'airtel-divider';
+    brandDiv.appendChild(divider);
+
+    // Brand text
+    const textDiv = document.createElement('div');
+    textDiv.className = 'airtel-brand-text';
+    textDiv.innerHTML = `
+        <div class="airtel-brand-title">
+            <span class="airtel-word">airtel</span>
+            <span class="mesh-word"> Mesh</span><span class="alpha-word">Alpha</span>
+        </div>
+        <div class="airtel-brand-sub">
+            <span class="airtel-version-tag">v2.0</span>
+            <span class="airtel-dept-tag">R&D Fleet Dashboard</span>
+        </div>`;
+    brandDiv.appendChild(textDiv);
+}
+
+// ========== 4. REBRAND LOADER (if exists) ==========
+const loaderBrand = document.querySelector('.mesh-loader-brand');
+if (loaderBrand) {
+    loaderBrand.innerHTML = '<span class="loader-airtel">airtel</span> <span class="loader-mesh">Mesh</span><span class="loader-alpha">Alpha</span>';
+}
+
+// ========== 5. INJECT FOOTER ==========
+const footer = document.createElement('div');
+footer.className = 'airtel-footer';
+footer.innerHTML = `
+    <div class="airtel-footer-left">
+        <svg width="14" height="14" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="none" stroke="#ED1C24" stroke-width="6"/><circle cx="60" cy="60" r="9" fill="#ED1C24"/><path d="M50 55 Q55 48 60 55" fill="none" stroke="#ED1C24" stroke-width="2.5"/><path d="M45 48 Q52 38 60 48" fill="none" stroke="#ED1C24" stroke-width="2"/></svg>
+        <span>Powered by <span class="footer-airtel">Airtel</span> R&D &mdash; Mesh Analytics Platform</span>
+    </div>
+    <div class="airtel-footer-right">
+        &copy; ${new Date().getFullYear()} Bharti Airtel Ltd. &mdash; Internal Use Only &mdash; Confidential
+    </div>`;
+document.body.appendChild(footer);
+
+// ========== 6. REBRAND WEEKLY HEADING ==========
+const weeklyHeading = document.querySelector('.weekly-heading');
+if (weeklyHeading) {
+    const icon = weeklyHeading.querySelector('i');
+    if (icon) icon.style.color = 'var(--airtel-red)';
+}
+
+// ========== 7. REBRAND CHARTS HEADING ==========
+const chartsHeading = document.querySelector('.charts-heading');
+if (chartsHeading) {
+    const icon = chartsHeading.querySelector('i');
+    if (icon) icon.style.color = 'var(--airtel-red)';
+}
+
+// ========== 8. REBRAND INSIGHT PANEL HEADING ==========
+const insightHeading = document.querySelector('.insight-panel-heading');
+if (insightHeading) {
+    const icon = insightHeading.querySelector('i');
+    if (icon) icon.style.color = 'var(--airtel-red)';
+}
+
+console.log('%c[AIRTEL MESHALPHA] Rebrand patch applied successfully.', 'color:#ED1C24;font-weight:bold;font-size:12px;');
+
+})();
+
 
 initTheme();
 boot();
