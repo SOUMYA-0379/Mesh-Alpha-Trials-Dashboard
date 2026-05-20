@@ -12,7 +12,7 @@
     {"user": "Jyotika Ext-1", "serial": "ANKAPAFE00002957", "mac": "58-07-F8-4F-A4-91"},
     {"user": "Rashim Root", "serial": "NKOTA0000592", "mac": "0C-36-23-4F-B1-90"},
     {"user": "Rashim Ext-1", "serial": "ANKAPBA000071578", "mac": "BC-51-5F-F9-87-20"},
-    {"user": "Rashim Ext-2", "serial": "ANKAPBA000026373", "mac": "BC-51-5F-E7-9F-40"},
+    {"user": "Rashim Ext-1", "serial": "ANKAPBA000026373", "mac": "BC-51-5F-E7-9F-40"},
     {"user": "Anil Rai Root", "serial": "NKOT2F045EF1", "mac": "6C-22-F7-E4-7E-B3"},
     {"user": "Anil Rai Ext-1", "serial": "ANKAPB4F00038580", "mac": "BC-51-5F-71-CB-63"},
     {"user": "Anil Rai Ext-2", "serial": "ANKAPB4F00023105", "mac": "BC-51-5F-6E-04-33"},
@@ -44,5 +44,10 @@
     {"user": "Animesh Test Device 2 Root", "serial": "ATAAPBBF00000126", "mac": ""},
     {"user": "Praveen(Amitabh) Root", "serial": "ZYOTB0900058", "mac": "C0-2E-5F-AD-77-99"},
     {"user": "Praveen(Amitabh) Ext-1", "serial": "AZYAPB0F00081172", "mac": "30-BD-13-C5-EC-A8"},
-    {"user": "Praveen(Amitabh) Ext-2", "serial": "AZYAPB1F00061776", "mac": "30-BD-13-CF-05-D0"}
-]
+    {"user": "Praveen(Amitabh) Ext-2", "serial": "AZYAPB1F00061776", "mac": "30-BD-13-CF-05-D0"},
+    {"user": "Anand Root", "serial": "ZYOTB0900031", "mac": "C0-2E-5F-AD-76-C1"},
+    {"user": "Anand Ext-1", "serial": "AZYAPB1F00066507", "mac": "30-BD-13-CF-99-90"},
+    {"user": "Anand Ext-2", "serial": "AZYAPB1F00068598", "mac": "30-BD-13-CF-DA-E8"},
+    {"user": "Anand Ext-3", "serial": "", "mac": ""},
+    {"user": "Anand Ext-4", "serial": "", "mac": ""}
+]   
