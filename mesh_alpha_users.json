@@ -37,7 +37,6 @@
     {"user": "Praveen Ext-1", "serial": "223333-768367373646", "mac": "30-BD-13-CF-4F-18"},
     {"user": "Hari Root", "serial": "ZYOTFF046132", "mac": ""},
     {"user": "Ankit Root", "serial": "ZYOTFD000042", "mac": "F8-0D-A9-6A-E5-C8"},
-    {"user": "Anand Root", "serial": "ZYOT1F089650", "mac": ""},
     {"user": "Rahul Root", "serial": "ZYOTB0900020", "mac": "C0-2E-5F-AD-76-69"},
     {"user": "Rahul Ext-1", "serial": "AZYAPB1F00064279", "mac": "30-BD-13-CF-53-F0"},
     {"user": "Rahul Ext-2", "serial": "AZYAPB1F00061789", "mac": "30-BD-13-CF-06-38"},
@@ -48,6 +47,8 @@
     {"user": "Anand Root", "serial": "ZYOTB0900031", "mac": "C0-2E-5F-AD-76-C1"},
     {"user": "Anand Ext-1", "serial": "AZYAPB1F00066507", "mac": "30-BD-13-CF-99-90"},
     {"user": "Anand Ext-2", "serial": "AZYAPB1F00068598", "mac": "30-BD-13-CF-DA-E8"},
-    {"user": "Anand Ext-3", "serial": "", "mac": ""},
-    {"user": "Anand Ext-4", "serial": "", "mac": ""}
+    {"user": "Anand Ext-3", "serial": "AZYAPB1F00068684", "mac": "30BD1CFDD96"},
+    {"user": "Pankaj Chopra Root", "serial": "NKOT0F01D2BA", "mac": "2C-C1-F4-33-42-F1"},
+    {"user": "Pankaj Chopra Ext-1", "serial": "ANKAPB1F00200144", "mac": "60-98-49-00-0F-31"},
+    {"user": "Pankaj Chopra Ext-2", "serial": "", "mac": "84-6E-BC-F3-80-71"}
 ]   
